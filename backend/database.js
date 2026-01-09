@@ -11,7 +11,7 @@ function initDatabase() {
             if (err) {
                 reject(err);
             } else {
-                console.log('📦 Connected to SQLite database');
+                console.log(' Connected to SQLite database');
                 createTables().then(resolve).catch(reject);
             }
         });
@@ -34,25 +34,41 @@ function createTables() {
             if (err) reject(err);
         });
 
-        // Таблица постов (остаётся)
+        // Таблица постов (ИСПРАВЛЕННАЯ ВЕРСИЯ)
         db.run(`
             CREATE TABLE IF NOT EXISTS posts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 title TEXT NOT NULL,
                 content TEXT NOT NULL,
                 author TEXT DEFAULT 'Developer',
-                user_id INTEGER,
+                user_id INTEGER DEFAULT NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id)
             )
         `, (err) => {
-            if (err) reject(err);
-            else {
-                // Создаём первого админа по умолчанию
+            if (err) {
+                reject(err);
+            } else {
+                console.log('Table posts successful created');
                 createDefaultAdmin().then(resolve).catch(resolve);
             }
         });
+        db.run(`
+    CREATE TABLE IF NOT EXISTS comments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        post_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        username TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+`, (err) => {
+    if (err) console.error('Error creating comments table:', err);
+    else console.log('Table comments successful created');
+});
     });
 }
 
@@ -171,7 +187,59 @@ function deletePost(id) {
         });
     });
 }
+// ================== КОММЕНТАРИИ ==================
 
+// Получить все комментарии для поста
+function getCommentsByPostId(postId) {
+    return new Promise((resolve, reject) => {
+        db.all(
+            `SELECT c.*, u.username, u.role 
+             FROM comments c 
+             LEFT JOIN users u ON c.user_id = u.id 
+             WHERE c.post_id = ? 
+             ORDER BY c.created_at ASC`,
+            [postId],
+            (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows);
+            }
+        );
+    });
+}
+
+// Создать комментарий
+function createComment(postId, userId, username, content) {
+    return new Promise((resolve, reject) => {
+        db.run(
+            'INSERT INTO comments (post_id, user_id, username, content) VALUES (?, ?, ?, ?)',
+            [postId, userId, username, content],
+            function(err) {
+                if (err) reject(err);
+                else resolve(this.lastID);
+            }
+        );
+    });
+}
+
+// Удалить комментарий (только автор или админ)
+function deleteComment(commentId) {
+    return new Promise((resolve, reject) => {
+        db.run('DELETE FROM comments WHERE id = ?', [commentId], function(err) {
+            if (err) reject(err);
+            else resolve(this.changes > 0);
+        });
+    });
+}
+
+// Получить комментарий по ID
+function getCommentById(commentId) {
+    return new Promise((resolve, reject) => {
+        db.get('SELECT * FROM comments WHERE id = ?', [commentId], (err, row) => {
+            if (err) reject(err);
+            else resolve(row);
+        });
+    });
+}
 module.exports = {
     initDatabase,
     // Пользователи
@@ -184,5 +252,10 @@ module.exports = {
     getPostById,
     createPost,
     updatePost,
-    deletePost
+    deletePost,
+    // Комментарии
+    getCommentsByPostId,
+    createComment,
+    deleteComment,
+    getCommentById
 };

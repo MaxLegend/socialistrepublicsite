@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>404 — Страница не найдена — Socialist Republic</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .error-container {
+      max-width: 800px;
+      margin: 60px auto;
+      padding: 40px;
+      text-align: center;
+      background: rgba(249, 233, 200, 0.9);
+      border: 3px solid var(--red);
+      border-radius: 5px;
+      box-shadow: 0 0 20px rgba(154, 42, 42, 0.2);
+    }
+    
+    .error-code {
+      font-size: 8rem;
+      color: var(--red);
+      margin: 0;
+      text-shadow: 3px 3px 0 #000;
+      line-height: 1;
+    }
+    
+    .error-title {
+      font-size: 2.5rem;
+      color: var(--red-dark);
+      margin: 20px 0;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    
+    .error-description {
+      font-size: 1.2rem;
+      margin: 25px 0;
+      line-height: 1.6;
+    }
+    
+    .error-details {
+      background: rgba(201, 169, 122, 0.2);
+      padding: 20px;
+      margin: 30px 0;
+      border-left: 4px solid var(--red);
+      text-align: left;
+    }
+    
+    .error-actions {
+      margin-top: 40px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .error-link {
+      display: inline-block;
+      padding: 12px 30px;
+      background: var(--red);
+      color: white;
+      text-decoration: none;
+      border: 2px solid var(--red-dark);
+      font-weight: bold;
+      font-size: 1.1rem;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .error-link:hover {
+      background: var(--red-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(154, 42, 42, 0.3);
+    }
+    
+    .error-link::after {
+      content: "→";
+      position: absolute;
+      right: 15px;
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    
+    .error-link:hover::after {
+      opacity: 1;
+      transform: translateX(5px);
+    }
+    
+    .error-link-home {
+      background: transparent;
+      color: var(--red);
+      border: 2px solid var(--red);
+    }
+    
+    .error-link-home:hover {
+      background: var(--red);
+      color: white;
+    }
+    
+    .error-illustration {
+      font-size: 5rem;
+      margin: 30px 0;
+      opacity: 0.8;
+    }
+    
+    @media (max-width: 768px) {
+      .error-container {
+        margin: 30px 20px;
+        padding: 30px 20px;
+      }
+      
+      .error-code {
+        font-size: 6rem;
+      }
+      
+      .error-title {
+        font-size: 2rem;
+      }
+      
+      .error-actions {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      .error-link {
+        width: 100%;
+        max-width: 300px;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-banner">
+    Socialist Republic
+  </div>
+
+<nav>
+ 
+  <div class="nav-center">
+    <a href="index.html">Главная</a>
+    <a href="about.html">Об игре</a>
+    <a href="screenshots.html">Скриншоты</a>
+    <a href="devlog.html">Разработка</a>
+    <a href="blog.html">Блог</a>
+    <a href="contact.html">Контакты</a>
+  </div>
+  
+<div class="nav-right">
+    <div class="auth-buttons">
+        <!-- Контент будет подгружен через JavaScript -->
+        <script>
+            // Временное содержимое, пока не загрузится скрипт
+            document.write(`
+                <a href="login.html" class="nav-auth">Вход</a>
+                <a href="login.html#register" class="nav-auth">Регистрация</a>
+            `);
+        </script>
+    </div>
+</div>
+</nav>
+
+  <main>
+    <div class="error-container">
+
+      <h1 class="error-code">404</h1>
+      
+      <h2 class="error-title">Страница не найдена</h2>
+      
+      <div class="error-description">
+        <p>Товарищ! Похоже, вы пытаетесь найти страницу, которая ещё не построена в нашей социалистической республике.</p>
+        <p>Возможно, это результат неправильного планирования или технической ошибки в системе навигации.</p>
+      </div>
+      
+      <div class="error-details">
+        <p><strong>Что могло произойти:</strong></p>
+        <ul>
+          <li>Страница была перемещена в другой раздел</li>
+          <li>Вы ввели неправильный адрес</li>
+          <li>Страница находится в стадии строительства</li>
+          <li>Временные технические работы на объекте</li>
+        </ul>
+        
+      </div>
+      
+      
+      <div style="margin-top: 40px; font-size: 0.9rem; color: #666;">
+        <p>Ошибка 404 • Страница не существует • Socialist Republic Development Team</p>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    © 2026 Socialist Republic Team • Каждая ошибка — шаг к совершенству социалистической системы
+  </footer>
+
+  <script>
+    // Функция для обновления UI авторизации
+    function updateAuthUI() {
+      const token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('user');
+      const authButtons = document.querySelector('.auth-buttons');
+      
+      if (!authButtons) return;
+      
+      // Очищаем содержимое
+      authButtons.innerHTML = '';
+      
+      if (token && userStr) {
+        const user = JSON.parse(userStr);
+        
+        // Пользователь авторизован
+        authButtons.innerHTML = `
+          <div class="user-info">
+            <span class="username">${user.username}</span>
+            <span class="user-role">${user.role}</span>
+          </div>
+          <a href="#" class="nav-auth nav-logout" onclick="logout()">Выйти</a>
+        `;
+      } else {
+        // Пользователь не авторизован
+        authButtons.innerHTML = `
+          <a href="login.html" class="nav-auth">Вход</a>
+          <a href="login.html#register" class="nav-auth">Регистрация</a>
+        `;
+      }
+    }
+    
+    // Выход
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      updateAuthUI();
+      location.reload();
+    }
+    
+    // Обновляем навигацию при загрузке
+    document.addEventListener('DOMContentLoaded', updateAuthUI);
+  </script>
+</body>
+</html>

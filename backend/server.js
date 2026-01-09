@@ -1,4 +1,3 @@
-
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
@@ -12,7 +11,11 @@ const {
     createUser,
     getUserByUsername,
     getUserById,
-    verifyPassword
+    verifyPassword,
+    getCommentsByPostId,
+    createComment,
+    deleteComment,
+    getCommentById
 } = require('./database');
 
 const { 
@@ -56,6 +59,10 @@ app.post('/api/register', async (req, res) => {
         
         if (password.length < 6) {
             return res.status(400).json({ error: 'Пароль должен быть не менее 6 символов' });
+        }
+        
+        if (username.length < 3) {
+            return res.status(400).json({ error: 'Логин должен быть не менее 3 символов' });
         }
         
         // Проверяем, существует ли пользователь
@@ -141,6 +148,18 @@ app.get('/api/me', authenticateToken, async (req, res) => {
     }
 });
 
+// Выход (клиентская операция, но можно добавить endpoint для инвалидации токена)
+app.post('/api/logout', authenticateToken, (req, res) => {
+    try {
+        // В реальном приложении здесь можно добавить инвалидацию токена
+        // Пока просто отвечаем успехом, так как JWT stateless
+        res.json({ message: 'Выход выполнен' });
+    } catch (error) {
+        console.error('Logout error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ================== БЛОГ ==================
 
 // Получение всех постов (доступно всем)
@@ -150,63 +169,255 @@ app.get('/api/posts', async (req, res) => {
         res.json(posts);
     } catch (error) {
         console.error('Get posts error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Ошибка при получении постов' });
     }
 });
 
 // Получение одного поста
 app.get('/api/posts/:id', async (req, res) => {
     try {
-        const post = await getPostById(req.params.id);
+        const postId = parseInt(req.params.id);
+        if (isNaN(postId)) {
+            return res.status(400).json({ error: 'Неверный ID поста' });
+        }
+        
+        const post = await getPostById(postId);
         if (!post) {
             return res.status(404).json({ error: 'Пост не найден' });
         }
         res.json(post);
     } catch (error) {
         console.error('Get post error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Ошибка при получении поста' });
     }
 });
 
 // Создание поста (только админ)
 app.post('/api/posts', authenticateToken, requireRole('admin'), async (req, res) => {
     try {
+        console.log('Creating post with data:', req.body);
+        console.log('User creating post:', req.user);
+        
         const { title, content } = req.body;
-        if (!title || !content) {
-            return res.status(400).json({ error: 'Заголовок и содержание обязательны' });
+        
+        if (!title || !title.trim()) {
+            return res.status(400).json({ error: 'Заголовок обязателен' });
         }
         
-        const id = await createPost(title, content, req.user.username, req.user.id);
-        res.json({ id, message: 'Пост создан успешно' });
+        if (!content || !content.trim()) {
+            return res.status(400).json({ error: 'Содержание обязательно' });
+        }
+        
+        if (title.trim().length < 3) {
+            return res.status(400).json({ error: 'Заголовок слишком короткий' });
+        }
+        
+        if (content.trim().length < 10) {
+            return res.status(400).json({ error: 'Содержание слишком короткое' });
+        }
+        
+        // Используем username из токена как автора
+        const author = req.user.username;
+        const userId = req.user.id;
+        
+        console.log('Creating post with:', { title: title.trim(), content: content.trim(), author, userId });
+        
+        const id = await createPost(title.trim(), content.trim(), author, userId);
+        
+        console.log('✅ Post created with ID:', id);
+        
+        res.status(201).json({ 
+            id, 
+            message: 'Пост создан успешно',
+            post: {
+                id,
+                title: title.trim(),
+                author,
+                created_at: new Date().toISOString()
+            }
+        });
     } catch (error) {
         console.error('Create post error:', error);
-        res.status(500).json({ error: error.message });
+        console.error('Error details:', error.message);
+        res.status(500).json({ error: 'Ошибка при создании поста: ' + error.message });
     }
 });
 
-// Редактирование поста
+// Редактирование поста (только админ)
 app.put('/api/posts/:id', authenticateToken, requireRole('admin'), async (req, res) => {
     try {
+        const postId = parseInt(req.params.id);
+        if (isNaN(postId)) {
+            return res.status(400).json({ error: 'Неверный ID поста' });
+        }
+        
         const { title, content } = req.body;
-        await updatePost(req.params.id, title, content);
-        res.json({ message: 'Пост обновлён' });
+        
+        if (!title || !title.trim()) {
+            return res.status(400).json({ error: 'Заголовок обязателен' });
+        }
+        
+        if (!content || !content.trim()) {
+            return res.status(400).json({ error: 'Содержание обязательно' });
+        }
+        
+        // Проверяем, существует ли пост
+        const existingPost = await getPostById(postId);
+        if (!existingPost) {
+            return res.status(404).json({ error: 'Пост не найден' });
+        }
+        
+        await updatePost(postId, title.trim(), content.trim());
+        res.json({ 
+            message: 'Пост обновлён',
+            post: {
+                id: postId,
+                title: title.trim(),
+                updated_at: new Date().toISOString()
+            }
+        });
     } catch (error) {
         console.error('Update post error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Ошибка при обновлении поста' });
     }
 });
 
-// Удаление поста
+// Удаление поста (только админ)
 app.delete('/api/posts/:id', authenticateToken, requireRole('admin'), async (req, res) => {
     try {
-        await deletePost(req.params.id);
-        res.json({ message: 'Пост удалён' });
+        const postId = parseInt(req.params.id);
+        if (isNaN(postId)) {
+            return res.status(400).json({ error: 'Неверный ID поста' });
+        }
+        
+        // Проверяем, существует ли пост
+        const existingPost = await getPostById(postId);
+        if (!existingPost) {
+            return res.status(404).json({ error: 'Пост не найден' });
+        }
+        
+        await deletePost(postId);
+        res.json({ 
+            message: 'Пост удалён',
+            deletedId: postId
+        });
     } catch (error) {
         console.error('Delete post error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(500).json({ error: 'Ошибка при удалении поста' });
+    }
+});
+// ================== КОММЕНТАРИИ ==================
+
+// Получить комментарии для поста (доступно всем)
+app.get('/api/posts/:id/comments', async (req, res) => {
+    try {
+        const postId = parseInt(req.params.id);
+        if (isNaN(postId)) {
+            return res.status(400).json({ error: 'Неверный ID поста' });
+        }
+        
+        // Проверяем, существует ли пост
+        const post = await getPostById(postId);
+        if (!post) {
+            return res.status(404).json({ error: 'Пост не найден' });
+        }
+        
+        const comments = await getCommentsByPostId(postId);
+        res.json(comments);
+    } catch (error) {
+        console.error('Get comments error:', error);
+        res.status(500).json({ error: 'Ошибка при получении комментариев' });
     }
 });
 
+// Создать комментарий (только авторизованные пользователи)
+app.post('/api/posts/:id/comments', authenticateToken, async (req, res) => {
+    try {
+        const postId = parseInt(req.params.id);
+        if (isNaN(postId)) {
+            return res.status(400).json({ error: 'Неверный ID поста' });
+        }
+        
+        const { content } = req.body;
+        
+        if (!content || !content.trim()) {
+            return res.status(400).json({ error: 'Содержание комментария обязательно' });
+        }
+        
+        if (content.trim().length < 3) {
+            return res.status(400).json({ error: 'Комментарий слишком короткий' });
+        }
+        
+        if (content.trim().length > 1000) {
+            return res.status(400).json({ error: 'Комментарий слишком длинный' });
+        }
+        
+        // Проверяем, существует ли пост
+        const post = await getPostById(postId);
+        if (!post) {
+            return res.status(404).json({ error: 'Пост не найден' });
+        }
+        
+        // Создаем комментарий
+        const commentId = await createComment(
+            postId,
+            req.user.id,
+            req.user.username,
+            content.trim()
+        );
+        
+        res.status(201).json({ 
+            id: commentId,
+            message: 'Комментарий добавлен',
+            comment: {
+                id: commentId,
+                post_id: postId,
+                user_id: req.user.id,
+                username: req.user.username,
+                content: content.trim(),
+                role: req.user.role,
+                created_at: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error('Create comment error:', error);
+        res.status(500).json({ error: 'Ошибка при добавлении комментария' });
+    }
+});
+
+// Удалить комментарий (только автор или админ)
+app.delete('/api/comments/:id', authenticateToken, async (req, res) => {
+    try {
+        const commentId = parseInt(req.params.id);
+        if (isNaN(commentId)) {
+            return res.status(400).json({ error: 'Неверный ID комментария' });
+        }
+        
+        // Получаем комментарий
+        const comment = await getCommentById(commentId);
+        if (!comment) {
+            return res.status(404).json({ error: 'Комментарий не найден' });
+        }
+        
+        // Проверяем права: только автор или админ могут удалять
+        if (comment.user_id !== req.user.id && req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'Недостаточно прав для удаления' });
+        }
+        
+        const deleted = await deleteComment(commentId);
+        if (!deleted) {
+            return res.status(404).json({ error: 'Комментарий не найден' });
+        }
+        
+        res.json({ 
+            message: 'Комментарий удалён',
+            deletedId: commentId
+        });
+    } catch (error) {
+        console.error('Delete comment error:', error);
+        res.status(500).json({ error: 'Ошибка при удалении комментария' });
+    }
+});
 // ================== СТРАНИЦЫ ==================
 
 // Главная страница
@@ -230,31 +441,86 @@ app.get('/login.html', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/login.html'));
 });
 
+// Обслуживаем другие страницы
+app.get('/about.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/about.html'));
+});
+
+app.get('/screenshots.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/screenshots.html'));
+});
+
+app.get('/devlog.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/devlog.html'));
+});
+
+app.get('/contact.html', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/contact.html'));
+});
+
 // Обслуживаем любые другие HTML файлы
 app.get('*.html', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public', req.path));
+    const filePath = path.join(__dirname, '../public', req.path);
+    if (require('fs').existsSync(filePath)) {
+        res.sendFile(filePath);
+    } else {
+        res.status(404).send('Страница не найдена');
+    }
 });
 
 // Обслуживаем статические файлы (CSS, JS, изображения)
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Обработка 404
+// API Health Check
+app.get('/api/health', (req, res) => {
+    res.json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        service: 'Socialist Republic API'
+    });
+});
+
+// Обработка 404 для API
+app.use('/api/*', (req, res) => {
+    res.status(404).json({ error: 'API endpoint не найден' });
+});
+
+// Обработка 404 для страниц
 app.use((req, res) => {
-    res.status(404).send('Страница не найдена');
+    res.status(404).sendFile(path.join(__dirname, '../public/404.html'));
 });
 
 // Обработка ошибок
 app.use((err, req, res, next) => {
     console.error('Server error:', err);
-    res.status(500).json({ error: 'Внутренняя ошибка сервера' });
+    
+    // Если это ошибка валидации JWT
+    if (err.name === 'JsonWebTokenError') {
+        return res.status(401).json({ error: 'Неверный токен' });
+    }
+    
+    if (err.name === 'TokenExpiredError') {
+        return res.status(401).json({ error: 'Токен истек' });
+    }
+    
+    res.status(500).json({ 
+        error: 'Внутренняя ошибка сервера',
+        message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
 });
 
 // Start server
 app.listen(PORT, async () => {
-    await initDatabase();
-    console.log(`🚀 Server running at http://localhost:${PORT}`);
-    console.log(`📝 Blog: http://localhost:${PORT}/blog.html`);
-    console.log(`🔑 Login: http://localhost:${PORT}/login.html`);
-    console.log(`👑 Admin: http://localhost:${PORT}/admin.html`);
-    console.log(`🔐 Admin account: admin / admin123`);
+    try {
+        await initDatabase();
+        console.log(`🚀 Server running at http://localhost:${PORT}`);
+        console.log(`📝 Blog: http://localhost:${PORT}/blog.html`);
+        console.log(`🔑 Login: http://localhost:${PORT}/login.html`);
+        console.log(`📊 API Health: http://localhost:${PORT}/api/health`);
+        console.log(`🔐 Admin account: admin / admin123`);
+        console.log(`📁 Static files: http://localhost:${PORT}/style.css`);
+    } catch (error) {
+        console.error('Failed to start server:', error);
+        process.exit(1);
+    }
 });

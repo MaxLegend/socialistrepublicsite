@@ -11,21 +11,37 @@
     Socialist Republic
   </div>
 
-  <nav>
+<nav>
+ 
+  <div class="nav-center">
     <a href="index.html">Главная</a>
     <a href="about.html">Об игре</a>
     <a href="screenshots.html">Скриншоты</a>
     <a href="devlog.html">Разработка</a>
-     <a href="blog.html">Блог</a>
+    <a href="blog.html">Блог</a>
     <a href="contact.html">Контакты</a>
-  </nav>
+  </div>
+  
+<div class="nav-right">
+    <div class="auth-buttons">
+        <!-- Контент будет подгружен через JavaScript -->
+        <script>
+            // Временное содержимое, пока не загрузится скрипт
+            document.write(`
+                <a href="login.html" class="nav-auth">Вход</a>
+                <a href="login.html#register" class="nav-auth">Регистрация</a>
+            `);
+        </script>
+    </div>
+</div>
+</nav>
 
   <main>
     <h1>Постройте Социалистическую Республику!</h1>
     <p>
       Socialist Republic — это градостроительный симулятор, вдохновлённый классикой жанра,
       но с глубокой проработкой инфраструктуры, экономики и идеологии. Строите дороги,
-      управляйте производством, балансируйте ресурсы — и ведите свой народ к светлому будущему!
+      управляете производством, балансируете ресурсы — и ведете свой народ к светлому будущему!
     </p>
     <p>
       Игра разрабатывается с нуля на движке Wicked Engine с использованием Bullet Physics,
@@ -38,9 +54,9 @@
   </main>
 
   <footer>
-    © 2026 Socialist Republic Team • Разработка ведётся с любовью к деталям и социалистической утопии
+    © 2026 Socialist Republic Team
   </footer>
-
+<script src="auth-ui.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

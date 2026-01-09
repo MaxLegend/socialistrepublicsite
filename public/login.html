@@ -92,11 +92,30 @@
     Socialist Republic
   </div>
 
-  <nav>
+<nav>
+ 
+  <div class="nav-center">
     <a href="index.html">Главная</a>
+    <a href="about.html">Об игре</a>
+    <a href="screenshots.html">Скриншоты</a>
+    <a href="devlog.html">Разработка</a>
     <a href="blog.html">Блог</a>
-    <a href="login.html">Вход</a>
-  </nav>
+    <a href="contact.html">Контакты</a>
+  </div>
+  
+<div class="nav-right">
+    <div class="auth-buttons">
+        <!-- Контент будет подгружен через JavaScript -->
+        <script>
+            // Временное содержимое, пока не загрузится скрипт
+            document.write(`
+                <a href="login.html" class="nav-auth">Вход</a>
+                <a href="login.html#register" class="nav-auth">Регистрация</a>
+            `);
+        </script>
+    </div>
+</div>
+</nav>
 
   <main>
     <div class="auth-container">
@@ -141,16 +160,12 @@
               <input type="text" id="reg-username" required>
             </div>
             <div class="form-group">
-              <label for="reg-email">Email (необязательно):</label>
-              <input type="email" id="reg-email">
-            </div>
-            <div class="form-group">
-              <label for="reg-password">Пароль (мин. 6 символов):</label>
-              <input type="password" id="reg-password" required minlength="6">
+              <label for="reg-password">Пароль (мин. 3 символов):</label>
+              <input type="password" id="reg-password" required minlength="3">
             </div>
             <div class="form-group">
               <label for="reg-password-confirm">Подтвердите пароль:</label>
-              <input type="password" id="reg-password-confirm" required minlength="6">
+              <input type="password" id="reg-password-confirm" required minlength="3">
             </div>
             <button type="submit" class="btn-auth">Зарегистрироваться</button>
           </form>
@@ -163,7 +178,7 @@
     © 2026 Socialist Republic Team
   </footer>
 
-  <script>
+   <script>
     const API_URL = '/api';
     
     // Проверяем, авторизован ли пользователь
@@ -235,10 +250,21 @@
           showMessage('Вход выполнен успешно!', 'success');
           showUserInfo(data.user);
           
-          // Редирект на блог через 1 секунду
+          // 🔴 ВСТАВЬТЕ ЭТОТ КОД ВМЕСТО СУЩЕСТВУЮЩЕГО РЕДИРЕКТА:
+          // Обновляем UI навигации на всех страницах
+          if (window.updateAuthUI) {
+            updateAuthUI();
+          }
+          
+          // Редирект в зависимости от роли
           setTimeout(() => {
-            window.location.href = 'blog.html';
+            if (data.user.role === 'admin') {
+              window.location.href = 'index.html';
+            } else {
+              window.location.href = 'index.html';
+            }
           }, 1000);
+          // 🔴 КОНЕЦ ВСТАВКИ
         } else {
           showMessage(data.error, 'error');
         }
@@ -275,6 +301,13 @@
           localStorage.setItem('user', JSON.stringify(data.user));
           showMessage('Регистрация успешна!', 'success');
           showUserInfo(data.user);
+          
+          // 🔴 ДОБАВЬТЕ ЭТОТ КОД ПОСЛЕ УСПЕШНОЙ РЕГИСТРАЦИИ:
+          // Обновляем UI навигации
+          if (window.updateAuthUI) {
+            updateAuthUI();
+          }
+          // 🔴 КОНЕЦ ДОБАВЛЕНИЯ
         } else {
           showMessage(data.error, 'error');
         }
@@ -283,10 +316,15 @@
       }
     }
     
-    // Выход
+    // Выход - ОБНОВИТЕ ЭТУ ФУНКЦИЮ:
     function logout() {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      // 🔴 ДОБАВЬТЕ ЭТО:
+      if (window.updateAuthUI) {
+        updateAuthUI();
+      }
+      // 🔴 КОНЕЦ ДОБАВЛЕНИЯ
       location.reload();
     }
     
@@ -315,8 +353,43 @@
       }, 5000);
     }
     
+    // 🔴 ДОБАВЬТЕ ЭТУ ФУНКЦИЮ ДЛЯ ОБНОВЛЕНИЯ НАВИГАЦИИ:
+    function updateAuthUI() {
+      const token = localStorage.getItem('token');
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      const authButtons = document.querySelector('.auth-buttons');
+      if (!authButtons) return;
+      
+      // Очищаем содержимое
+      authButtons.innerHTML = '';
+      
+      if (token && user.username) {
+        // Пользователь авторизован
+        authButtons.innerHTML = `
+          <div class="user-info">
+            <span class="username">${user.username}</span>
+            <span class="user-role">${user.role}</span>
+          </div>
+          <a href="#" class="nav-auth nav-logout" onclick="logout()">Выйти</a>
+        `;
+      } else {
+        // Пользователь не авторизован
+        authButtons.innerHTML = `
+          <a href="login.html" class="nav-auth">Вход</a>
+          <a href="login.html#register" class="nav-auth">Регистрация</a>
+        `;
+      }
+    }
+    // 🔴 КОНЕЦ ДОБАВЛЕНИЯ
+    
     // Проверяем авторизацию при загрузке страницы
-    document.addEventListener('DOMContentLoaded', checkAuth);
+    document.addEventListener('DOMContentLoaded', function() {
+      checkAuth();
+      // 🔴 ДОБАВЬТЕ ЭТУ СТРОЧКУ:
+      updateAuthUI();
+    });
   </script>
+
 </body>
 </html>

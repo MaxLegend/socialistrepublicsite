@@ -6,9 +6,9 @@
 }
 
 :root {
-  --paper: #f9e9c8;        /* фон как старая бумага */
-  --ink: #2b1d10;          /* текст — чёрнила */
-  --red: #9a2a2a;          /* акцент — советский красный */
+  --paper: #f9e9c8;
+  --ink: #2b1d10;
+  --red: #9a2a2a;
   --red-dark: #6b1d1d;
   --border: #c9a97a;
 }
@@ -18,13 +18,12 @@ body {
   background: var(--paper);
   color: var(--ink);
   line-height: 1.6;
-  overflow: auto; /* без прокрутки */
+  overflow: auto;
   min-height: 100vh;
   padding: 0;
   margin: 0;
 }
 
-/* Заголовок газеты — как на первой полосе */
 .header-banner {
   background: var(--red);
   color: white;
@@ -53,24 +52,39 @@ body {
   margin: 10px auto;
 }
 
-/* Навигация — как в газете */
+/* Навигация */
 nav {
   background: var(--paper);
   border-bottom: 2px double var(--red);
-  padding: 12px 0;
-  text-align: center;
+  padding: 12px 20px;
   position: sticky;
   top: 0;
   z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative; /* Для позиционирования правого блока */
+  min-height: 60px; /* Фиксируем высоту навигации */
 }
 
-nav a {
+/* Центральная часть навигации */
+.nav-center {
+  position: absolute; /* Убираем из потока */
+  left: 50%;
+  transform: translateX(-50%); /* Центрируем по горизонтали */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+}
+
+.nav-center a {
   display: inline-block;
   color: var(--red);
   text-decoration: none;
   font-weight: bold;
   padding: 8px 18px;
-  margin: 0 6px;
   border: 1px solid var(--red);
   background: rgba(249, 233, 200, 0.7);
   position: relative;
@@ -78,13 +92,47 @@ nav a {
   transition: none;
 }
 
-nav a:hover {
+.nav-center a:hover {
   background: var(--red);
   color: white;
 }
 
-/* Эффект печатной машинки при наведении */
-nav a::before {
+/* Правая часть навигации (авторизация) */
+.nav-right {
+  position: absolute; /* Убираем из потока */
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%); /* Вертикальное центрирование */
+  z-index: 11; /* Поверх других элементов */
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 5px;
+}
+
+.nav-auth {
+  padding: 8px 15px !important;
+  font-size: 0.9rem !important;
+  color: var(--red) !important;
+  text-decoration: none !important;
+  font-weight: bold !important;
+  border: 1px solid var(--red) !important;
+  background: rgba(249, 233, 200, 0.9) !important;
+  position: relative;
+  overflow: hidden;
+  transition: none !important;
+  white-space: nowrap;
+}
+
+.nav-auth:hover {
+  background: var(--red) !important;
+  color: white !important;
+}
+
+/* Эффект печатной машинки */
+.nav-center a::before,
+.nav-auth::before {
   content: "";
   position: absolute;
   top: 0;
@@ -101,12 +149,58 @@ nav a::before {
   animation: typewriter 0.8s linear forwards;
 }
 
-nav a:hover::before {
+.nav-center a:hover::before,
+.nav-auth:hover::before {
   animation: typewriter 0.6s linear forwards;
 }
 
 @keyframes typewriter {
   to { left: 100%; }
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+  nav {
+    flex-direction: column;
+    gap: 10px;
+    padding-bottom: 15px;
+    min-height: auto;
+  }
+  
+  .nav-center {
+    position: static;
+    transform: none;
+    left: auto;
+    order: 1;
+    width: 100%;
+    justify-content: center;
+    margin-top: 10px;
+  }
+  
+  .nav-right {
+    position: static;
+    transform: none;
+    right: auto;
+    order: 2;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+  }
+  
+  .auth-buttons {
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .nav-auth {
+    padding: 6px 12px !important;
+  }
+  
+  .nav-center a {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+  }
 }
 
 /* Основной контент */
@@ -222,7 +316,7 @@ footer {
   margin-top: 30px;
 }
 
-/* Общий паттерн текстуры — имитация бумаги (опционально) */
+/* Общий паттерн текстуры — имитация бумаги */
 body::before {
   content: "";
   position: absolute;
@@ -233,4 +327,57 @@ body::before {
   background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" opacity="0.03"><rect width="100%" height="100%" fill="white"/><path d="M0,0 L200,200 M200,0 L0,200" stroke="%239a2a2a" stroke-width="1"/></svg>');
   pointer-events: none;
   z-index: -1;
+}
+
+.auth-buttons {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    color: var(--red-dark);
+    font-size: 0.9rem;
+    padding: 5px 10px;
+    border-right: 1px solid var(--border);
+    margin-right: 5px;
+}
+
+.username {
+    font-weight: bold;
+    color: var(--red);
+}
+
+.user-role {
+    font-size: 0.8rem;
+    opacity: 0.8;
+    text-transform: uppercase;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+    .auth-buttons {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+    }
+    
+    .user-info {
+        align-items: center;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 10px;
+        margin-right: 0;
+        margin-bottom: 5px;
+        width: 100%;
+    }
+    
+    .nav-auth {
+        width: 100%;
+        max-width: 200px;
+    }
 }
