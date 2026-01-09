@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Админ-панель — Socialist Republic</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .admin-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--red-dark);
+      font-weight: bold;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      background: rgba(249, 233, 200, 0.7);
+      font-family: inherit;
+      font-size: 1rem;
+    }
+    textarea {
+      min-height: 200px;
+      resize: vertical;
+    }
+    .btn-admin {
+      background: var(--red);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-right: 10px;
+    }
+    .btn-admin:hover {
+      background: var(--red-dark);
+    }
+    .posts-list {
+      margin-top: 40px;
+    }
+    .post-item {
+      border: 1px solid var(--border);
+      padding: 15px;
+      margin-bottom: 15px;
+      background: rgba(249, 233, 200, 0.3);
+    }
+    .post-actions {
+      margin-top: 10px;
+    }
+    .message {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+    }
+    .success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-banner">
+    Socialist Republic — Админ-панель
+  </div>
+
+  <nav>
+    <a href="index.html">Главная</a>
+    <a href="blog.html">Блог</a>
+    <a href="admin.html">Админка</a>
+  </nav>
+
+  <main class="admin-container">
+    <h1>Управление блогом</h1>
+    
+    <div id="message"></div>
+    
+    <h2>Создать новую запись</h2>
+    <form id="post-form">
+      <div class="form-group">
+        <label for="title">Заголовок:</label>
+        <input type="text" id="title" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="author">Автор:</label>
+        <input type="text" id="author" value="Developer">
+      </div>
+      
+      <div class="form-group">
+        <label for="content">Содержание (можно использовать HTML):</label>
+        <textarea id="content" required></textarea>
+      </div>
+      
+      <button type="submit" class="btn-admin">Опубликовать</button>
+      <button type="button" class="btn-admin" onclick="clearForm()">Очистить</button>
+    </form>
+    
+    <div class="posts-list">
+      <h2>Существующие записи</h2>
+      <div id="posts-list">
+        <!-- Список постов будет здесь -->
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    © 2026 Socialist Republic Team • Админ-панель
+  </footer>
+
+  <script>
+    const API_URL = 'http://localhost:3000/api/posts';
+    
+    // Показать сообщение
+    function showMessage(text, type = 'success') {
+      const messageDiv = document.getElementById('message');
+      messageDiv.className = `message ${type}`;
+      messageDiv.textContent = text;
+      setTimeout(() => {
+        messageDiv.textContent = '';
+        messageDiv.className = 'message';
+      }, 5000);
+    }
+    
+    // Очистить форму
+    function clearForm() {
+      document.getElementById('title').value = '';
+      document.getElementById('author').value = 'Developer';
+      document.getElementById('content').value = '';
+    }
+    
+    // Создать пост
+    document.getElementById('post-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const title = document.getElementById('title').value;
+      const author = document.getElementById('author').value;
+      const content = document.getElementById('content').value;
+      
+      try {
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ title, content, author })
+        });
+        
+        if (response.ok) {
+          showMessage('Запись успешно опубликована!');
+          clearForm();
+          loadPosts();
+        } else {
+          const error = await response.json();
+          showMessage(`Ошибка: ${error.error}`, 'error');
+        }
+      } catch (error) {
+        showMessage(`Ошибка сети: ${error.message}`, 'error');
+      }
+    });
+    
+    // Загрузить все посты
+    async function loadPosts() {
+      try {
+        const response = await fetch(API_URL);
+        const posts = await response.json();
+        
+        const postsList = document.getElementById('posts-list');
+        if (posts.length === 0) {
+          postsList.innerHTML = '<p>Нет записей.</p>';
+          return;
+        }
+        
+        let html = '';
+        posts.forEach(post => {
+          html += `
+            <div class="post-item" id="post-${post.id}">
+              <h3>${post.title}</h3>
+              <p><small>ID: ${post.id} | Автор: ${post.author} | Создано: ${new Date(post.created_at).toLocaleString('ru-RU')}</small></p>
+              <div class="post-actions">
+                <button class="btn-admin" onclick="editPost(${post.id})">Редактировать</button>
+                <button class="btn-admin" onclick="deletePost(${post.id})" style="background: #dc3545;">Удалить</button>
+              </div>
+            </div>
+          `;
+        });
+        
+        postsList.innerHTML = html;
+      } catch (error) {
+        showMessage(`Ошибка загрузки: ${error.message}`, 'error');
+      }
+    }
+    
+    // Удалить пост
+    async function deletePost(id) {
+      if (!confirm('Удалить эту запись?')) return;
+      
+      try {
+        const response = await fetch(`${API_URL}/${id}`, {
+          method: 'DELETE'
+        });
+        
+        if (response.ok) {
+          showMessage('Запись удалена');
+          loadPosts();
+        } else {
+          const error = await response.json();
+          showMessage(`Ошибка: ${error.error}`, 'error');
+        }
+      } catch (error) {
+        showMessage(`Ошибка сети: ${error.message}`, 'error');
+      }
+    }
+    
+    // Редактировать пост (базовая версия)
+    async function editPost(id) {
+      const title = prompt('Новый заголовок:');
+      if (!title) return;
+      
+      const content = prompt('Новое содержание:');
+      if (!content) return;
+      
+      try {
+        const response = await fetch(`${API_URL}/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ title, content })
+        });
+        
+        if (response.ok) {
+          showMessage('Запись обновлена');
+          loadPosts();
+        } else {
+          const error = await response.json();
+          showMessage(`Ошибка: ${error.error}`, 'error');
+        }
+      } catch (error) {
+        showMessage(`Ошибка сети: ${error.message}`, 'error');
+      }
+    }
+    
+    // Загрузить посты при загрузке страницы
+    document.addEventListener('DOMContentLoaded', loadPosts);
+  </script>
+</body>
+</html>

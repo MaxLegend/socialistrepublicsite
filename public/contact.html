@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Контакты — Socialist Republic</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="header-banner">
+    Socialist Republic
+  </div>
+
+  <nav>
+    <a href="index.html">Главная</a>
+    <a href="about.html">Об игре</a>
+    <a href="screenshots.html">Скриншоты</a>
+    <a href="devlog.html">Разработка</a>
+     <a href="blog.html">Блог</a>
+    <a href="contact.html">Контакты</a>
+  </nav>
+
+  <main>
+    <h1>Связаться с разработчиком</h1>
+    <p>
+      Проект ведётся одним энтузиастом. Вы можете следить за прогрессом здесь:
+    </p>
+    <div style="text-align: center; margin: 25px 0;">
+      <a href="https://github.com/ваш-ник/SocialistRepublic" class="btn" target="_blank">GitHub</a>
+      <!-- Discord можно добавить позже -->
+    </div>
+    <p>
+      Хотите получать уведомления о новых сборках? Оставьте email:
+    </p>
+    <div style="text-align: center; margin-top: 15px;">
+      <input type="email" id="email" placeholder="ваш@email.com" style="padding: 8px 15px; font-size: 1rem; border: 1px solid var(--red);"/>
+      <button class="btn" onclick="subscribe()">Подписаться</button>
+    </div>
+    <p id="msg" style="text-align: center; color: var(--red); margin-top: 10px; min-height: 20px;"></p>
+  </main>
+
+  <footer>
+    © 2026 Socialist Republic Team
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

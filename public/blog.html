@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Блог — Socialist Republic</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .post-form {
+      background: rgba(249, 233, 200, 0.9);
+      border: 2px solid var(--red);
+      padding: 20px;
+      margin: 30px 0;
+      display: none;
+    }
+    .post-form h2 {
+      margin-top: 0;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--red-dark);
+      font-weight: bold;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      background: white;
+      font-family: inherit;
+      font-size: 1rem;
+    }
+    textarea {
+      min-height: 150px;
+      resize: vertical;
+    }
+    .btn-blog {
+      background: var(--red);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-right: 10px;
+    }
+    .btn-blog:hover {
+      background: var(--red-dark);
+    }
+    .post {
+      margin-bottom: 40px;
+      border-bottom: 1px dashed var(--red);
+      padding-bottom: 20px;
+    }
+    .post-meta {
+      color: #666;
+      font-size: 0.9em;
+      margin-bottom: 10px;
+    }
+    .admin-buttons {
+      margin-top: 15px;
+      display: none;
+    }
+    .message {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+    }
+    .success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-banner">
+    Socialist Republic
+  </div>
+
+  <nav>
+    <a href="index.html">Главная</a>
+    <a href="about.html">Об игре</a>
+    <a href="screenshots.html">Скриншоты</a>
+    <a href="devlog.html">Разработка</a>
+    <a href="blog.html">Блог</a>
+    <a href="contact.html">Контакты</a>
+    <a href="login.html" id="login-link">Вход</a>
+    <a href="admin.html" id="admin-link" style="display: none;">Админка</a>
+  </nav>
+
+  <main>
+    <h1>Блог разработки</h1>
+    <p>Здесь я пишу о процессе создания игры, технических деталях и мыслях.</p>
+    
+    <!-- Форма создания поста (только для админа) -->
+    <div id="post-form" class="post-form">
+      <h2>Создать новый пост</h2>
+      <form id="create-post-form">
+        <div class="form-group">
+          <label for="post-title">Заголовок:</label>
+          <input type="text" id="post-title" required>
+        </div>
+        <div class="form-group">
+          <label for="post-content">Содержание:</label>
+          <textarea id="post-content" required></textarea>
+        </div>
+        <button type="submit" class="btn-blog">Опубликовать</button>
+        <button type="button" class="btn-blog" onclick="hidePostForm()">Отмена</button>
+      </form>
+    </div>
+    
+    <!-- Кнопка для админа -->
+    <div id="admin-controls" style="display: none; margin-bottom: 20px;">
+      <button class="btn-blog" onclick="showPostForm()">✏️ Написать пост</button>
+    </div>
+    
+    <div id="message" class="message"></div>
+    
+    <div id="posts-container">
+      <!-- Посты будут загружены через JavaScript -->
+    </div>
+  </main>
+
+  <footer>
+    © 2026 Socialist Republic Team
+  </footer>
+
+  <script>
+   const API_URL = '/api';
+    let currentUser = null;
+    let isAdmin = false;
+    
+    // Проверяем авторизацию
+    async function checkAuth() {
+      const token = localStorage.getItem('token');
+      const userStr = localStorage.getItem('user');
+      
+      if (token && userStr) {
+        currentUser = JSON.parse(userStr);
+        isAdmin = currentUser.role === 'admin';
+        
+        // Обновляем навигацию
+        document.getElementById('login-link').textContent = `Выйти (${currentUser.username})`;
+        document.getElementById('login-link').onclick = logout;
+        
+        if (isAdmin) {
+          document.getElementById('admin-link').style.display = 'inline-block';
+          document.getElementById('admin-controls').style.display = 'block';
+        }
+      }
+    }
+    
+    // Загружаем посты
+    async function loadPosts() {
+      try {
+        const response = await fetch(`${API_URL}/posts`);
+        const posts = await response.json();
+        
+        const container = document.getElementById('posts-container');
+        if (posts.length === 0) {
+          container.innerHTML = '<p>Пока нет записей в блоге.</p>';
+          return;
+        }
+        
+        let html = '';
+        posts.forEach(post => {
+          html += `
+            <div class="post" id="post-${post.id}">
+              <h2>${post.title}</h2>
+              <div class="post-meta">
+                👤 ${post.author} | 📅 ${new Date(post.created_at).toLocaleDateString('ru-RU')}
+              </div>
+              <div class="post-content">${post.content.replace(/\n/g, '<br>')}</div>
+              ${isAdmin ? `
+                <div class="admin-buttons">
+                  <button class="btn-blog" onclick="editPost(${post.id})">Редактировать</button>
+                  <button class="btn-blog" onclick="deletePost(${post.id})" style="background: #dc3545;">Удалить</button>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        });
+        
+        container.innerHTML = html;
+        
+        // Показываем кнопки админа
+        if (isAdmin) {
+          document.querySelectorAll('.admin-buttons').forEach(btn => {
+            btn.style.display = 'block';
+          });
+        }
+      } catch (error) {
+        console.error('Ошибка загрузки постов:', error);
+        document.getElementById('posts-container').innerHTML = 
+          '<p>Не удалось загрузить записи. Убедитесь, что сервер запущен.</p>';
+      }
+    }
+    
+    // Показать форму создания поста
+    function showPostForm() {
+      document.getElementById('post-form').style.display = 'block';
+    }
+    
+    // Скрыть форму
+    function hidePostForm() {
+      document.getElementById('post-form').style.display = 'none';
+      document.getElementById('create-post-form').reset();
+    }
+    
+    // Создать пост
+    document.getElementById('create-post-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        showMessage('Требуется авторизация', 'error');
+        return;
+      }
+      
+      const title = document.getElementById('post-title').value;
+      const content = document.getElementById('post-content').value;
+      
+      try {
+        const response = await fetch(`${API_URL}/posts`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ title, content })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          showMessage('Пост опубликован!', 'success');
+          hidePostForm();
+          loadPosts(); // Перезагружаем посты
+        } else {
+          showMessage(data.error, 'error');
+        }
+      } catch (error) {
+        showMessage('Ошибка сети', 'error');
+      }
+    });
+    
+    // Редактировать пост
+    async function editPost(id) {
+      const newTitle = prompt('Новый заголовок:');
+      if (!newTitle) return;
+      
+      const newContent = prompt('Новое содержание:');
+      if (!newContent) return;
+      
+      const token = localStorage.getItem('token');
+      
+      try {
+        const response = await fetch(`${API_URL}/posts/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ title: newTitle, content: newContent })
+        });
+        
+        if (response.ok) {
+          showMessage('Пост обновлён!', 'success');
+          loadPosts();
+        } else {
+          const data = await response.json();
+          showMessage(data.error, 'error');
+        }
+      } catch (error) {
+        showMessage('Ошибка сети', 'error');
+      }
+    }
+    
+    // Удалить пост
+    async function deletePost(id) {
+      if (!confirm('Удалить этот пост?')) return;
+      
+      const token = localStorage.getItem('token');
+      
+      try {
+        const response = await fetch(`${API_URL}/posts/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          showMessage('Пост удалён!', 'success');
+          loadPosts();
+        } else {
+          const data = await response.json();
+          showMessage(data.error, 'error');
+        }
+      } catch (error) {
+        showMessage('Ошибка сети', 'error');
+      }
+    }
+    
+    // Выход
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = 'login.html';
+    }
+    
+    // Показать сообщение
+    function showMessage(text, type = 'success') {
+      const messageDiv = document.getElementById('message');
+      messageDiv.textContent = text;
+      messageDiv.className = `message ${type}`;
+      messageDiv.style.display = 'block';
+      
+      setTimeout(() => {
+        messageDiv.style.display = 'none';
+      }, 3000);
+    }
+    
+    // Инициализация
+    document.addEventListener('DOMContentLoaded', async () => {
+      await checkAuth();
+      await loadPosts();
+    });
+  </script>
+</body>
+</html>

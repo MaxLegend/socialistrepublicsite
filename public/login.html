@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Вход — Socialist Republic</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .auth-container {
+      max-width: 400px;
+      margin: 40px auto;
+      padding: 30px;
+      border: 2px solid var(--border);
+      background: rgba(249, 233, 200, 0.9);
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--red-dark);
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      background: white;
+      font-family: inherit;
+      font-size: 1rem;
+    }
+    .btn-auth {
+      background: var(--red);
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      cursor: pointer;
+      font-size: 1rem;
+      width: 100%;
+      margin-top: 10px;
+    }
+    .btn-auth:hover {
+      background: var(--red-dark);
+    }
+    .tabs {
+      display: flex;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 10px;
+      cursor: pointer;
+      background: rgba(201, 169, 122, 0.3);
+    }
+    .tab.active {
+      background: var(--red);
+      color: white;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .message {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      text-align: center;
+    }
+    .success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .user-info {
+      text-align: center;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-banner">
+    Socialist Republic
+  </div>
+
+  <nav>
+    <a href="index.html">Главная</a>
+    <a href="blog.html">Блог</a>
+    <a href="login.html">Вход</a>
+  </nav>
+
+  <main>
+    <div class="auth-container">
+      <h1 id="page-title">Авторизация</h1>
+      
+      <div id="message" class="message"></div>
+      
+      <div id="user-info" class="user-info" style="display: none;">
+        <h3>Вы вошли как: <span id="username-display"></span></h3>
+        <p>Роль: <span id="user-role"></span></p>
+        <button class="btn-auth" onclick="logout()">Выйти</button>
+        <a href="blog.html" class="btn-auth" style="display: block; margin-top: 10px; text-decoration: none;">Перейти в блог</a>
+      </div>
+      
+      <div id="auth-forms">
+        <div class="tabs">
+          <div class="tab active" onclick="showTab('login')">Вход</div>
+          <div class="tab" onclick="showTab('register')">Регистрация</div>
+        </div>
+        
+        <div id="login-form" class="tab-content active">
+          <form id="loginForm" onsubmit="login(event)">
+            <div class="form-group">
+              <label for="login-username">Логин:</label>
+              <input type="text" id="login-username" required>
+            </div>
+            <div class="form-group">
+              <label for="login-password">Пароль:</label>
+              <input type="password" id="login-password" required>
+            </div>
+            <button type="submit" class="btn-auth">Войти</button>
+          </form>
+          <p style="text-align: center; margin-top: 15px; font-size: 0.9em;">
+            Аккаунт админа: admin / admin123
+          </p>
+        </div>
+        
+        <div id="register-form" class="tab-content">
+          <form id="registerForm" onsubmit="register(event)">
+            <div class="form-group">
+              <label for="reg-username">Логин:</label>
+              <input type="text" id="reg-username" required>
+            </div>
+            <div class="form-group">
+              <label for="reg-email">Email (необязательно):</label>
+              <input type="email" id="reg-email">
+            </div>
+            <div class="form-group">
+              <label for="reg-password">Пароль (мин. 6 символов):</label>
+              <input type="password" id="reg-password" required minlength="6">
+            </div>
+            <div class="form-group">
+              <label for="reg-password-confirm">Подтвердите пароль:</label>
+              <input type="password" id="reg-password-confirm" required minlength="6">
+            </div>
+            <button type="submit" class="btn-auth">Зарегистрироваться</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    © 2026 Socialist Republic Team
+  </footer>
+
+  <script>
+    const API_URL = '/api';
+    
+    // Проверяем, авторизован ли пользователь
+    async function checkAuth() {
+      const token = localStorage.getItem('token');
+      if (!token) return false;
+      
+      try {
+        const response = await fetch(`${API_URL}/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          showUserInfo(data.user);
+          return true;
+        } else {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          return false;
+        }
+      } catch (error) {
+        return false;
+      }
+    }
+    
+    // Показываем информацию о пользователе
+    function showUserInfo(user) {
+      document.getElementById('auth-forms').style.display = 'none';
+      document.getElementById('user-info').style.display = 'block';
+      document.getElementById('username-display').textContent = user.username;
+      document.getElementById('user-role').textContent = 
+        user.role === 'admin' ? '👑 Администратор' : '👤 Пользователь';
+      
+      // Обновляем навигацию
+      updateNavigation(user);
+    }
+    
+    // Обновляем навигацию в зависимости от роли
+    function updateNavigation(user) {
+      const nav = document.querySelector('nav');
+      if (user.role === 'admin') {
+        const adminLink = document.createElement('a');
+        adminLink.href = 'admin.html';
+        adminLink.textContent = 'Админка';
+        nav.appendChild(adminLink);
+      }
+    }
+    
+    // Вход
+    async function login(event) {
+      event.preventDefault();
+      
+      const username = document.getElementById('login-username').value;
+      const password = document.getElementById('login-password').value;
+      
+      try {
+        const response = await fetch(`${API_URL}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          showMessage('Вход выполнен успешно!', 'success');
+          showUserInfo(data.user);
+          
+          // Редирект на блог через 1 секунду
+          setTimeout(() => {
+            window.location.href = 'blog.html';
+          }, 1000);
+        } else {
+          showMessage(data.error, 'error');
+        }
+      } catch (error) {
+        showMessage('Ошибка сети', 'error');
+      }
+    }
+    
+    // Регистрация
+    async function register(event) {
+      event.preventDefault();
+      
+      const username = document.getElementById('reg-username').value;
+      const email = document.getElementById('reg-email').value;
+      const password = document.getElementById('reg-password').value;
+      const passwordConfirm = document.getElementById('reg-password-confirm').value;
+      
+      if (password !== passwordConfirm) {
+        showMessage('Пароли не совпадают', 'error');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`${API_URL}/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, email })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+          showMessage('Регистрация успешна!', 'success');
+          showUserInfo(data.user);
+        } else {
+          showMessage(data.error, 'error');
+        }
+      } catch (error) {
+        showMessage('Ошибка сети', 'error');
+      }
+    }
+    
+    // Выход
+    function logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      location.reload();
+    }
+    
+    // Переключение вкладок
+    function showTab(tabName) {
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+      });
+      
+      document.querySelector(`[onclick="showTab('${tabName}')"]`).classList.add('active');
+      document.getElementById(`${tabName}-form`).classList.add('active');
+    }
+    
+    // Показать сообщение
+    function showMessage(text, type = 'success') {
+      const messageDiv = document.getElementById('message');
+      messageDiv.textContent = text;
+      messageDiv.className = `message ${type}`;
+      messageDiv.style.display = 'block';
+      
+      setTimeout(() => {
+        messageDiv.style.display = 'none';
+      }, 5000);
+    }
+    
+    // Проверяем авторизацию при загрузке страницы
+    document.addEventListener('DOMContentLoaded', checkAuth);
+  </script>
+</body>
+</html>
